@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "dsh-connect-codearts",
+    "description": "Connect Huawei Cloud CodeArts / ModelArts Studio (MaaS) models to DSH. The plugin serves a loopback OpenAI-compatible endpoint, signs every request with Huawei Cloud SDK-HMAC-SHA256 and forwards it upstream, so no hand-maintained signing proxy is needed. Ships glm-5.3, kimi-k3.1-pro, deepseek-v4.1-flash-1017 and two multimodal models, with per-model image input gating and readable errors for upstream in-band failures."
+  }
+}
