@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "dsh-connect-codearts",
+    "description": "把华为云 CodeArts / ModelArts Studio（MaaS）上的模型接入 DSH。插件在本机回环地址起一个 OpenAI 兼容端点，自动完成华为云 SDK-HMAC-SHA256 签名后转发上游，无需再手工维护签名代理；内置 glm-5.3、kimi-k3.1-pro、deepseek-v4.1-flash-1017 与两个多模态模型，可按模型开关图片输入，并把上游的带内错误翻译成可读报错。"
+  }
+}
