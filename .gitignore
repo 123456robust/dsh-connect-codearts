@@ -1,0 +1,32 @@
+# 依赖
+node_modules/
+.pnpm-store/
+
+# 构建产物
+dist/
+*.tsbuildinfo
+
+# 运行时
+*.log
+npm-debug.log*
+logs/
+
+# 本地凭据 —— 绝不提交
+.env
+.env.*
+!.env.example
+credentials.json
+*.pem
+*.key
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# 测试与临时
+coverage/
+tmp/
+.tmp/
