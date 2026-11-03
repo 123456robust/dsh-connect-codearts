@@ -2,6 +2,17 @@
 
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.0.1] — 2026-11-03
+
+### 修复
+
+- **插件在 dsh 0.2.1-rc.5 / cordis 4 上无法激活**：`apply()` 末尾用 `ctx.set('codeartsSettings', …)` 注册一个从未 `provide` 的服务，而 cordis 4 的 `Service.set()` 只允许改写本 fiber 已 provide 的服务，这里直接抛 `cannot set property "codeartsSettings" without provide`，整条 loader 条目激活失败 —— `/plugins/dsh-connect-codearts/status` 返回 404、模型选择器里也没有 `codearts`。现在这段附属注册走新的 `lib/ctx-bridge.js`：先 `set`（热重载后服务仍在的常规路径），失败再 `provide`（首次注册），两步都失败只降级成一条 `warn`。`codeartsSettings` 目前没有消费方，注册成败不该影响 provider 本身。
+- **补上容器语义自测**：`scripts/selftest.mjs` 此前只覆盖纯函数、回环 shim 与真实上游，从不把插件放进 cordis 容器跑 `apply()`，所以「装不上但自测全绿」这个组合一直没被发现。新增 4 项用例（`== ctx 附属服务 ==`）：未 provide 时落到 `provide`、已存在时走 `set`、两步都失败时降级成 `warn`、以及裸 `ctx.set` 未 provide 的名字确实会抛（复现原始缺陷）。自测总数 17 → 21。
+
+### 变更
+
+- 新增 `lib/ctx-bridge.js`（零依赖，不 import 任何 DSH 包，因此自测可直接加载）与对应 `exports` 条目 `dsh-connect-codearts/ctx-bridge`。
+
 ## [1.0.0] — 2026-11-02
 
 首个版本。

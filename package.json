@@ -23,6 +23,7 @@
     "./client": "./lib/client.js",
     "./signer": "./lib/signer.js",
     "./shim": "./lib/shim.js",
+    "./ctx-bridge": "./lib/ctx-bridge.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json",
     "./locale/*.json": "./locale/*.json"

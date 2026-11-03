@@ -13,6 +13,7 @@
 
 import { createShim } from '../lib/shim.js'
 import { loadCredentials, signHeaders, inbandErrorOf, stripUnsupportedImages, maskAk } from '../lib/signer.js'
+import { attachAuxService } from '../lib/ctx-bridge.js'
 
 const offline = process.argv.includes('--offline')
 let passed = 0
@@ -113,6 +114,68 @@ await test('inbandErrorOf 认三种带内错误形状', () => {
   assert(inbandErrorOf({ error: { code: 'E2', message: 'boom2' } })?.code === 'E2', '形状二')
   assert(inbandErrorOf({ code: 'E3', message: 'boom3' })?.code === 'E3', '形状三')
   assert(inbandErrorOf({ choices: [{ delta: { content: 'ok' } }] }) === undefined, '正常帧不该被判成错误')
+})
+
+console.log('\n== ctx 附属服务 ==')
+
+/**
+ * 造一个最小的 cordis 语义替身：`set` 对未 provide 的名字抛错，与 cordis 4 一致。
+ * @param {Iterable<string>} [provided] 已经 provide 过的服务名。
+ */
+function fakeCtx(provided = []) {
+  const store = new Map([...provided].map((key) => [key, undefined]))
+  return {
+    store,
+    provide(serviceName, value) {
+      if (store.has(serviceName)) throw new Error(`service "${serviceName}" already provided`)
+      store.set(serviceName, value)
+    },
+    set(serviceName, value) {
+      if (!store.has(serviceName)) throw new Error(`cannot set property "${serviceName}" without provide`)
+      store.set(serviceName, value)
+    },
+    get(serviceName) {
+      return store.get(serviceName)
+    },
+  }
+}
+
+await test('attachAuxService 对未 provide 的服务落到 provide，不再抛错', () => {
+  const ctx = fakeCtx()
+  const warnings = []
+  const branch = attachAuxService(ctx, 'codeartsSettings', { a: 1 }, (error) => warnings.push(String(error?.message ?? error)))
+  assert(branch === 'provided', `期望 provided，实际 ${branch}`)
+  assert(warnings.length === 0, `不该有警告：${warnings.join(' / ')}`)
+  assert(ctx.get('codeartsSettings')?.a === 1, '服务没挂上')
+})
+
+await test('attachAuxService 对已存在的服务走 set 覆写', () => {
+  const ctx = fakeCtx(['codeartsSettings'])
+  const branch = attachAuxService(ctx, 'codeartsSettings', { a: 2 }, () => {})
+  assert(branch === 'set', `期望 set，实际 ${branch}`)
+  assert(ctx.get('codeartsSettings')?.a === 2, '没覆写成新值')
+})
+
+await test('set 与 provide 都失败时降级成 warn，绝不向外传播', () => {
+  const ctx = fakeCtx(['codeartsSettings'])
+  ctx.set = () => {
+    throw new Error('cannot set property "codeartsSettings" in multiple fibers')
+  }
+  const warnings = []
+  const branch = attachAuxService(ctx, 'codeartsSettings', {}, (error) => warnings.push(String(error?.message ?? error)))
+  assert(branch === 'failed', `期望 failed，实际 ${branch}`)
+  assert(warnings.length === 1, `应该恰好一条 warn，实际 ${warnings.length}`)
+})
+
+await test('裸 ctx.set 一个未 provide 的名字确实会抛（复现原始缺陷）', () => {
+  const ctx = fakeCtx()
+  let thrown = false
+  try {
+    ctx.set('codeartsSettings', {})
+  } catch {
+    thrown = true
+  }
+  assert(thrown, 'cordis 4 语义下应当抛错；若这里不抛，说明替身与真实 cordis 不符')
 })
 
 console.log('\n== 回环 shim ==')

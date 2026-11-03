@@ -92,7 +92,7 @@ Settings → Plugins → `dsh-connect-codearts`:
 ## Testing
 
 ```bash
-npm test             # 17 checks, including live upstream calls
+npm test             # 21 checks, including live upstream calls
 npm run test:offline # skip the networked checks
 npm run probe glm-5.3 "hello"  # single upstream request
 ```
@@ -142,7 +142,7 @@ lib/
   client.js     # Browser half: settings card + composer pill
   index.d.ts    # Type declarations
 scripts/
-  selftest.mjs       # End-to-end self test (17 checks)
+  selftest.mjs       # End-to-end self test (21 checks)
   probe-upstream.mjs # Single-request probe
 locale/         # zh / en display metadata
 icons/          # Icons
