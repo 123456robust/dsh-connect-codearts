@@ -84,7 +84,7 @@ git clone <本仓库地址> dsh-connect-codearts
 
 | 字段 | 默认值 | 说明 |
 | --- | --- | --- |
-| `region` | `cn-north-4` | 华为云区域。区域会写进上游主机名。 |
+| `region` | `cn-north-4` | 华为云区域，决定 `snap-access.<region>` 主机名与签名请求的去向。凭据文件里的 `region` 只说明这把 AK 当初在哪个区域登录，不能覆盖这里的设置。 |
 | `credentialsFile` | 空 | 凭据文件路径。留空用默认位置。 |
 | `models` | 全部五个 | 启用的模型 id，改完即时生效。 |
 | `heartbeat` | `true` | 是否发会话心跳。失败不影响聊天。 |
@@ -92,7 +92,7 @@ git clone <本仓库地址> dsh-connect-codearts
 ## 自测
 
 ```bash
-npm test            # 21 项，含真实上游调用
+npm test            # 25 项，含真实上游调用
 npm run test:offline # 跳过联网用例
 npm run probe glm-5.3 "你好"  # 单独打一发上游
 ```
@@ -145,7 +145,7 @@ lib/
   client.js     # 浏览器半部分：设置卡片 + 输入框胶囊
   index.d.ts    # 类型声明
 scripts/
-  selftest.mjs       # 端到端自测（21 项）
+  selftest.mjs       # 端到端自测（25 项）
   probe-upstream.mjs # 单发探针
 locale/         # zh / en 显示元数据
 icons/          # 图标

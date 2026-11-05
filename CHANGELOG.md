@@ -2,6 +2,17 @@
 
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.0.3] — 2026-11-05
+
+### 修复
+
+- **「区域」设置与真正发出去的主机名不是同一个区域**：设置页显示的上游端点是 `snap-access.<settings.region>`，但转发与心跳都用了凭据文件里的 `region`（`streamUpstream` 的 `host ?? upstreamHost(credentials.region)`）。当凭据来自另一个区域的 CodeArts CLI 登录（例如文件写 `cn-north-1`、设置为默认 `cn-north-4`）时，卡片上会同时出现「区域 cn-north-1」和「上游端点 …cn-north-4」，而实际请求打到了凭据区域，排查时极易误判。现在统一以「区域」设置为准：转发、心跳、状态卡片的端点都用它；凭据文件里的 region 只在两者不一致时作为「凭据来自 …」的补充说明展示。
+- 状态接口新增 `region` 字段（生效区域），卡片优先用它，不再让凭据区域看起来像生效区域。
+
+### 变更
+
+- 自测新增「上游主机名跟区域设置走」用例，用例数 24 → 25；`sendHeartbeat` 支持显式 `host`。
+
 ## [1.0.2] — 2026-11-05
 
 ### 修复

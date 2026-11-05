@@ -84,7 +84,7 @@ Settings → Plugins → `dsh-connect-codearts`:
 
 | Field | Default | Meaning |
 | --- | --- | --- |
-| `region` | `cn-north-4` | Huawei Cloud region; written into the upstream hostname. |
+| `region` | `cn-north-4` | Huawei Cloud region; decides the `snap-access.<region>` hostname and where signed requests go. A `region` inside the credentials file only records where the AK was logged in — it never overrides this setting. |
 | `credentialsFile` | empty | Credential file path. Empty means the default location. |
 | `models` | all five | Enabled model ids; changes apply immediately. |
 | `heartbeat` | `true` | Whether to send session heartbeats. Failures never break chat. |
@@ -92,7 +92,7 @@ Settings → Plugins → `dsh-connect-codearts`:
 ## Testing
 
 ```bash
-npm test             # 21 checks, including live upstream calls
+npm test             # 25 checks, including live upstream calls
 npm run test:offline # skip the networked checks
 npm run probe glm-5.3 "hello"  # single upstream request
 ```
@@ -145,7 +145,7 @@ lib/
   client.js     # Browser half: settings card + composer pill
   index.d.ts    # Type declarations
 scripts/
-  selftest.mjs       # End-to-end self test (21 checks)
+  selftest.mjs       # End-to-end self test (25 checks)
   probe-upstream.mjs # Single-request probe
 locale/         # zh / en display metadata
 icons/          # Icons

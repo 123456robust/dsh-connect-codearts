@@ -12,7 +12,7 @@
  */
 
 import { buildThinkingLevelMap, createShim } from '../lib/shim.js'
-import { loadCredentials, signHeaders, inbandErrorOf, stripUnsupportedImages, maskAk } from '../lib/signer.js'
+import { loadCredentials, signHeaders, inbandErrorOf, stripUnsupportedImages, maskAk, upstreamHost } from '../lib/signer.js'
 import { attachAuxService } from '../lib/ctx-bridge.js'
 
 const offline = process.argv.includes('--offline')
@@ -98,6 +98,20 @@ await test('缺少 AK/SK 抛 CredentialError', () => {
 
 await test('maskAk 只暴露首尾四位', () => {
   assert(maskAk('ABCDZZZZ111122223333WXYZ') === 'ABCD****WXYZ', maskAk('ABCDZZZZ111122223333WXYZ'))
+})
+
+await test('上游主机名跟「区域」设置走，凭据文件的 region 只作展示', () => {
+  assert(upstreamHost('cn-north-1') === 'snap-access.cn-north-1.myhuaweicloud.com', upstreamHost('cn-north-1'))
+  assert(upstreamHost() === 'snap-access.cn-north-4.myhuaweicloud.com', upstreamHost())
+  const headers = signHeaders({
+    body: '{}',
+    model: 'glm-5.3',
+    ak: 'AKTEST',
+    sk: 'SKTEST',
+    host: upstreamHost('cn-north-1'),
+    sessionId: 'ses_test',
+  })
+  assert(headers.host === 'snap-access.cn-north-1.myhuaweicloud.com', `host 头应来自区域设置，实际 ${headers.host}`)
 })
 
 await test('stripUnsupportedImages 只动非多模态模型', () => {
