@@ -25,7 +25,7 @@ pi-ai 照常用标准的 `openai-completions` 协议；shim 收到请求后重�
 
 - **五个实测可服务的模型**，按租户真实可用性筛选过
 - **多模态**：`kimi-k2.6-vl` 与 `Qwen3-VL-235B` 可以读图
-- **推理档位**：`low / medium / high / xhigh / max`，关掉思考时发 `thinking:{type:"disabled"}`（`glm-5.3`、`deepseek-v4.1-flash-1017` 生效；`kimi-k3.1-pro` 思考关不掉，见设计说明 §4.5）
+- **推理档位**：`minimal / low / medium / high / xhigh / max` 按模型实测裁剪（见下表），关闭思考发 `thinking:{type:"disabled"}`。`kimi-k3.1-pro` 实测关不掉，选择器里就不会出现「关闭」（见设计说明 §4.5）
 - **带内错误翻译**：上游用 HTTP 200 + 一条错误事件报错，插件把它翻成标准 OpenAI 错误帧，界面上能看到真实原因
 - **图片自动降级**：给文字模型发图片时折叠成文字说明，避免一条坏消息永久污染会话
 - **会话保活**：固定 session id + 周期心跳，绕开「每账号 3 个并发会话」的上限
@@ -33,13 +33,13 @@ pi-ai 照常用标准的 `openai-completions` 协议；shim 收到请求后重�
 
 ## 内置模型
 
-| 模型 | 上下文 | 最大输出 | 多模态 |
-| --- | --- | --- | --- |
-| `glm-5.3` | 1,048,576 | 65,536 | — |
-| `kimi-k3.1-pro` | 262,144 | 32,768 | — |
-| `deepseek-v4.1-flash-1017` | 262,144 | 32,768 | — |
-| `kimi-k2.6-vl` | 262,144 | 32,768 | ✓ |
-| `Qwen3-VL-235B` | 131,072 | 16,384 | ✓ |
+| 模型 | 上下文 | 最大输出 | 多模态 | 思考档位 |
+| --- | --- | --- | --- | --- |
+| `glm-5.3` | 1,048,576 | 65,536 | — | `low…max`（`xhigh`/`max` 才真正返回 reasoning），可关 |
+| `kimi-k3.1-pro` | 262,144 | 32,768 | — | `low…max`，**不可关** |
+| `deepseek-v4.1-flash-1017` | 262,144 | 32,768 | — | `minimal…max`，可关 |
+| `kimi-k2.6-vl` | 262,144 | 32,768 | ✓ | `low…max`，可关 |
+| `Qwen3-VL-235B` | 131,072 | 16,384 | ✓ | `low…max`，可关 |
 
 目录是**实测**的：同一租户下 `deepseek-v3.2`、`qwen3-max`、`glm-4.6`、`kimi-k2` 都返回 404（模型未注册）。改目录前请先跑 `npm run probe`。
 
@@ -122,7 +122,10 @@ Signature        = hex(HMAC-SHA256(key=SK, msg=StringToSign))
 | `supportsDeveloperRole: false` | 上游拒绝 `role: "developer"`，回 `InferHub.001001044.400` |
 | `thinkingFormat: "zai"` | 关思考时会发一个非法的 `reasoning_effort` 字符串而不是 `thinking:{type:"disabled"}` |
 
-另外 `thinkingLevelMap` 里把 `minimal` 显式设成 `null`：`glm-5.3` 收到 `reasoning_effort: "minimal"` 会回 400，而 pi-ai 对未映射的档位会**原样**把档位名发出去。设成 `null` 后该档位从可选列表消失。
+另外 `thinkingLevelMap` 按模型逐档构造，而不是全局一份：
+
+- `minimal` 默认映射成 `null`（从可选列表消失）：`glm-5.3` 收到 `reasoning_effort: "minimal"` 会回 400，而 pi-ai 对未映射的档位会**原样**把档位名发出去。只有 `deepseek-v4.1-flash-1017` 实测接受，才把它列进 `efforts`。
+- `off` 缺省表示「支持关闭思考」；`canDisableThinking: false` 的 `kimi-k3.1-pro` 把 `off` 映射成 `null`，免得选择一个关不掉的档位。
 
 ### 为什么图片要折叠
 

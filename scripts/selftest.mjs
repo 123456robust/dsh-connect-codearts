@@ -11,7 +11,7 @@
  * `CODEARTS_AK`/`CODEARTS_SK`）。
  */
 
-import { createShim } from '../lib/shim.js'
+import { buildThinkingLevelMap, createShim } from '../lib/shim.js'
 import { loadCredentials, signHeaders, inbandErrorOf, stripUnsupportedImages, maskAk } from '../lib/signer.js'
 import { attachAuxService } from '../lib/ctx-bridge.js'
 
@@ -48,6 +48,8 @@ function assert(condition, message) {
 const CATALOG = [
   { id: 'glm-5.3', name: 'GLM-5.3', contextWindow: 1_048_576, maxTokens: 65_536, multimodal: false, reasoning: true, efforts: ['low', 'medium', 'high', 'xhigh', 'max'] },
   { id: 'kimi-k2.6-vl', name: 'Kimi K2.6 VL', contextWindow: 262_144, maxTokens: 32_768, multimodal: true, reasoning: true, efforts: ['low', 'medium', 'high', 'xhigh', 'max'] },
+  { id: 'kimi-k3.1-pro', name: 'Kimi K3.1 Pro', contextWindow: 262_144, maxTokens: 32_768, multimodal: false, reasoning: true, canDisableThinking: false, efforts: ['low', 'medium', 'high', 'xhigh', 'max'] },
+  { id: 'deepseek-v4.1-flash-1017', name: 'DeepSeek V4.1 Flash', contextWindow: 262_144, maxTokens: 32_768, multimodal: false, reasoning: true, efforts: ['minimal', 'low', 'medium', 'high', 'xhigh', 'max'] },
 ]
 
 console.log('\n== 纯函数 ==')
@@ -114,6 +116,26 @@ await test('inbandErrorOf 认三种带内错误形状', () => {
   assert(inbandErrorOf({ error: { code: 'E2', message: 'boom2' } })?.code === 'E2', '形状二')
   assert(inbandErrorOf({ code: 'E3', message: 'boom3' })?.code === 'E3', '形状三')
   assert(inbandErrorOf({ choices: [{ delta: { content: 'ok' } }] }) === undefined, '正常帧不该被判成错误')
+})
+
+console.log('\n== 思考档位 ==')
+
+await test('glm-5.3 不提供 minimal，但提供 low…max 与关闭思考', () => {
+  const map = buildThinkingLevelMap(CATALOG[0])
+  assert(map.minimal === null, `minimal 必须为 null，实际 ${String(map.minimal)}`)
+  assert(map.low === 'low' && map.max === 'max', 'low/max 应映射到同名 effort')
+  assert(map.off === undefined, 'off 缺省才表示支持关闭思考（zai 会发 disabled）')
+})
+
+await test('deepseek-v4.1-flash-1017 提供 minimal（实测上游接受）', () => {
+  const map = buildThinkingLevelMap(CATALOG[3])
+  assert(map.minimal === 'minimal', `minimal 应映射成 "minimal"，实际 ${String(map.minimal)}`)
+})
+
+await test('关不掉思考的模型把 off 映射成 null，选择器里不出现假开关', () => {
+  const map = buildThinkingLevelMap(CATALOG[2])
+  assert(map.off === null, `off 必须为 null，实际 ${String(map.off)}`)
+  assert(map.minimal === null, 'kimi-k3.1-pro 同样不接受 minimal')
 })
 
 console.log('\n== ctx 附属服务 ==')
@@ -207,7 +229,7 @@ await test('GET /v1/models 列出目录', async () => {
   const res = await call('/v1/models')
   const body = await res.json()
   assert(res.status === 200, `状态码 ${res.status}`)
-  assert(body.data.length === 2, `期望 2 个模型，实际 ${body.data.length}`)
+  assert(body.data.length === CATALOG.length, `期望 ${CATALOG.length} 个模型，实际 ${body.data.length}`)
   assert(body.data.find((m) => m.id === 'kimi-k2.6-vl').input_modalities.includes('image'), '多模态模型应声明 image 输入')
 })
 

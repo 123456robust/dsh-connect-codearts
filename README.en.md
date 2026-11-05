@@ -25,7 +25,7 @@ pi-ai keeps using the standard `openai-completions` protocol; the shim re-signs,
 
 - **Five verified-servable models**, filtered against real tenant availability
 - **Multimodal**: `kimi-k2.6-vl` and `Qwen3-VL-235B` read images
-- **Reasoning levels**: `low / medium / high / xhigh / max`; disabling thinking sends `thinking:{type:"disabled"}` (honoured by `glm-5.3` and `deepseek-v4.1-flash-1017`; `kimi-k3.1-pro` cannot be switched off — see design note §4.5)
+- **Reasoning levels**: `minimal / low / medium / high / xhigh / max`, trimmed per model from live probing (see the table); disabling thinking sends `thinking:{type:"disabled"}`. `kimi-k3.1-pro` cannot be switched off, so no fake off switch is offered (see design note §4.5)
 - **In-band error translation**: the upstream reports failures as HTTP 200 + one error event; the plugin turns them into standard OpenAI error frames so the real reason reaches the UI
 - **Automatic image downgrade**: images sent to text models are folded into a text note, so one bad message never poisons a session
 - **Session keep-alive**: one pinned session id plus periodic heartbeat, working around the 3-concurrent-session cap
@@ -33,13 +33,13 @@ pi-ai keeps using the standard `openai-completions` protocol; the shim re-signs,
 
 ## Bundled models
 
-| Model | Context | Max output | Multimodal |
-| --- | --- | --- | --- |
-| `glm-5.3` | 1,048,576 | 65,536 | — |
-| `kimi-k3.1-pro` | 262,144 | 32,768 | — |
-| `deepseek-v4.1-flash-1017` | 262,144 | 32,768 | — |
-| `kimi-k2.6-vl` | 262,144 | 32,768 | ✓ |
-| `Qwen3-VL-235B` | 131,072 | 16,384 | ✓ |
+| Model | Context | Max output | Multimodal | Thinking |
+| --- | --- | --- | --- | --- |
+| `glm-5.3` | 1,048,576 | 65,536 | — | `low…max` (only `xhigh`/`max` really reason), off supported |
+| `kimi-k3.1-pro` | 262,144 | 32,768 | — | `low…max`, **cannot be disabled** |
+| `deepseek-v4.1-flash-1017` | 262,144 | 32,768 | — | `minimal…max`, off supported |
+| `kimi-k2.6-vl` | 262,144 | 32,768 | ✓ | `low…max`, off supported |
+| `Qwen3-VL-235B` | 131,072 | 16,384 | ✓ | `low…max`, off supported |
 
 The catalog is **empirical**: on the same tenant `deepseek-v3.2`, `qwen3-max`, `glm-4.6` and `kimi-k2` all return 404 (model not registered). Run `npm run probe` before editing it.
 
@@ -122,7 +122,10 @@ None of these are optional; each was forced by a measurement:
 | `supportsDeveloperRole: false` | The upstream rejects `role: "developer"` with `InferHub.001001044.400` |
 | `thinkingFormat: "zai"` | Disabling thinking would send an illegal `reasoning_effort` string instead of `thinking:{type:"disabled"}` |
 
-`thinkingLevelMap` also pins `minimal` to `null`: `glm-5.3` returns 400 for `reasoning_effort: "minimal"`, and pi-ai forwards an unmapped level **verbatim** as the effort string. Mapping it to `null` removes the level from the selectable list.
+`thinkingLevelMap` is built per model instead of sharing one map:
+
+- `minimal` defaults to `null` (removed from the selector): `glm-5.3` returns 400 for `reasoning_effort: "minimal"`, and pi-ai forwards an unmapped level **verbatim** as the effort string. Only `deepseek-v4.1-flash-1017` accepts it live, so only that model lists it.
+- An absent `off` means "disabling is supported"; `canDisableThinking: false` (`kimi-k3.1-pro`) maps `off` to `null` so the selector never offers a switch that does nothing.
 
 ### Why images are folded
 

@@ -2,6 +2,18 @@
 
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.0.2] — 2026-11-05
+
+### 修复
+
+- **「深度思考强度」的档位按模型实测裁剪，不再全局一刀切**：`thinkingLevelMap` 原先固定为「`minimal` → `null` + 其余同名」，导致两个偏差。其一，`deepseek-v4.1-flash-1017` 实测接受 `reasoning_effort: "minimal"` 并返回 reasoning，却被一起隐藏；其二，`kimi-k3.1-pro` 的「关闭思考」会发 `thinking:{type:"disabled"}`，但实测该模型照常返回 reasoning —— 选择器里出现了一个关不掉的假开关。现在目录条目可以声明 `canDisableThinking: false`，`off` 会被映射成 `null` 从可选档位中移除；`deepseek-v4.1-flash-1017` 则单独放开 `minimal`。
+- **修正 `package.json` 版本号**：`CHANGELOG` 已有 1.0.1，`package.json` 仍停在 1.0.0，装出来的包版本与变更记录对不上。
+
+### 变更
+
+- 新增 `buildThinkingLevelMap(info)`（`lib/shim.js`）并导出，`toPiModel()` 改为调用它；`CodeArtsModelInfo` 增加可选字段 `canDisableThinking`。
+- 自测覆盖档位映射的三种形态（默认 / 放开 `minimal` / 不可关闭），用例数 21 → 24；`/v1/models` 用例改为按目录长度断言。
+
 ## [1.0.1] — 2026-11-03
 
 ### 修复

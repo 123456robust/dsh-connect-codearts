@@ -22,6 +22,11 @@ export interface CodeArtsModelInfo {
   reasoning: boolean
   /** 该模型接受的推理档位。 */
   efforts: string[]
+  /**
+   * 是否支持关闭思考。缺省为 true；设为 false 时选择器里不出现「关闭」档位。
+   * （`kimi-k3.1-pro` 实测关不掉。）
+   */
+  canDisableThinking?: boolean
 }
 
 /** 插件设置。 */
